@@ -1,153 +1,238 @@
-<div align="center">
-  <img src="resources/mmtrack-logo.png" width="600"/>
-  <div>&nbsp;</div>
-  <div align="center">
-    <b><font size="5">OpenMMLab website</font></b>
-    <sup>
-      <a href="https://openmmlab.com">
-        <i><font size="4">HOT</font></i>
-      </a>
-    </sup>
-    &nbsp;&nbsp;&nbsp;&nbsp;
-    <b><font size="5">OpenMMLab platform</font></b>
-    <sup>
-      <a href="https://platform.openmmlab.com">
-        <i><font size="4">TRY IT OUT</font></i>
-      </a>
-    </sup>
-  </div>
-  <div>&nbsp;</div>
-</div>
+# MOUNT: MOtion-aware Ultrasound video Needle Tracking
 
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mmtrack)](https://pypi.org/project/mmtrack/)
-[![PyPI](https://img.shields.io/pypi/v/mmtrack)](https://pypi.org/project/mmtrack)
-[![docs](https://img.shields.io/badge/docs-latest-blue)](https://mmtracking.readthedocs.io/en/latest/)
-[![badge](https://github.com/open-mmlab/mmtracking/workflows/build/badge.svg)](https://github.com/open-mmlab/mmtracking/actions)
-[![codecov](https://codecov.io/gh/open-mmlab/mmtracking/branch/master/graph/badge.svg)](https://codecov.io/gh/open-mmlab/mmtracking)
-[![license](https://img.shields.io/github/license/open-mmlab/mmtracking.svg)](https://github.com/open-mmlab/mmtracking/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-English | [简体中文](/README_zh-CN.md)
+This repository contains the official implementation of **MOUNT** (MOtion-aware Ultrasound video Needle Tracking), a robust video instance segmentation model designed for accurate needle tracking in ultrasound-guided interventions.
 
-Documentation: https://mmtracking.readthedocs.io/
+## Overview
 
-## Introduction
+MOUNT is a two-stage instance detection and tracking model developed based on [mmtracking](https://github.com/open-mmlab/mmtracking) framework. It addresses the challenges of needle tracking in ultrasound videos, including:
 
-MMTracking is an open source video perception toolbox based on PyTorch.
-It is a part of the OpenMMLab project.
+- Missing needle signals
+- Low needle contrast
+- Uneven motion between frames
+- Needle bending
 
-The master branch works with **PyTorch1.5+**.
+### Key Features
 
-<div align="left">
-  <img src="https://user-images.githubusercontent.com/24663779/103343312-c724f480-4ac6-11eb-9c22-b56f1902584e.gif" width="800"/>
-</div>
+MOUNT integrates three novel modules:
 
-### Major features
+1. **Uneven Motion Perception (UMP)**
+   - Perceives uneven motion between key frames and reference frames
+   - Aligns reference frames to the key frame using optical flow
+   - Enhances the consistency of the needle target in feature space
+2. **Region Proposal Network with Tip-specific Detection (TD-RPN)**
+   - Focuses on the tip of the needle which has distinct characteristics
+   - Uses polar coordinate system for anchor generation
+   - Incorporates tip-specific detection loss
+3. **Adjacent Frame Aggregation (AFA)**
+   - Aggregates features from adjacent reference frames
+   - Filters outlier proposals using IoU, feature similarity, and directional differences
+   - Enhances needle signal through weighted aggregation
+4. **Post-processing Pipeline**
+   - Generates final tracking results from proposals
+   - Produces entry point, tip, and shaft of the needle
 
-- **The First Unified Video Perception Platform**
+## Architecture
 
-  We are the first open source toolbox that unifies versatile video perception tasks include video object detection, multiple object tracking, single object tracking and video instance segmentation.
-
-- **Modular Design**
-
-  We decompose the video perception framework into different components and one can easily construct a customized method by combining different modules.
-
-- **Simple, Fast and Strong**
-
-  **Simple**: MMTracking interacts with other OpenMMLab projects. It is built upon [MMDetection](https://github.com/open-mmlab/mmdetection) that we can capitalize any detector only through modifying the configs.
-
-  **Fast**: All operations run on GPUs. The training and inference speeds are faster than or comparable to other implementations.
-
-  **Strong**: We reproduce state-of-the-art models and some of them even outperform the official implementations.
-
-## License
-
-This project is released under the [Apache 2.0 license](LICENSE).
-
-## Changelog
-
-Release [QDTrack](configs/mot/qdtrack) pretrained models.
-
-v0.12.0 was released in 01/04/2022.
-Please refer to [changelog.md](docs/en/changelog.md) for details and release history.
-
-## Benchmark and model zoo
-
-Results and models are available in the [model zoo](docs/en/model_zoo.md).
-
-Supported methods of video object detection:
-
-- [x] [DFF](configs/vid/dff) (CVPR 2017)
-- [x] [FGFA](configs/vid/fgfa) (ICCV 2017)
-- [x] [SELSA](configs/vid/selsa) (ICCV 2019)
-- [x] [Temporal RoI Align](configs/vid/temporal_roi_align) (AAAI 2021)
-
-Supported methods of multi object tracking:
-
-- [x] [SORT/DeepSORT](configs/mot/deepsort) (ICIP 2016/2017)
-- [x] [Tracktor](configs/mot/tracktor) (ICCV 2019)
-- [x] [QDTrack](configs/mot/qdtrack) (CVPR 2021)
-- [x] [ByteTrack](configs/mot/bytetrack) (arXiv 2021)
-
-Supported methods of single object tracking:
-
-- [x] [SiameseRPN++](configs/sot/siamese_rpn) (CVPR 2019)
-- [x] [STARK](configs/sot/stark) (ICCV 2021)
-
-Supported methods of video instance segmentation:
-
-- [x] [MaskTrack R-CNN](configs/vis/masktrack_rcnn) (ICCV 2019)
+```
+Ultrasound Video Frames
+       ↓
+   ┌───┴───────────────────────────────────────────┐
+   │  Key Frame    Reference Frames (window)       │
+   └───┬───────────────────────────────────────────┘
+       ↓
+   ┌───────────────────────────────────────────────┐
+   │          Feature Extractor (shared)           │
+   └───┬───────────────────────────────────────────┘
+       ↓
+   ┌──────────────────┬────────────────────────────┐
+   │   Reference      │       UMP Module           │
+   │  Feature Maps    │  (Optical Flow + Alignment)│
+   └──────────────────┴───────────┬────────────────┘
+                                  ↓
+                       ┌───────────────────┐
+                       │   Aligned Ref     │
+                       │   Feature Maps    │
+                       └─────────┬─────────┘
+                                 ↓
+   ┌───────────────────────────────────────────────┐
+   │              TD-RPN Module                    │
+   │   (Tip-specific Region Proposal Network)      │
+   └───────────────────────────┬───────────────────┘
+                               ↓
+                   ┌───────────────────┐
+                   │   Needle Proposals│
+                   └─────────┬─────────┘
+                             ↓
+   ┌───────────────────────────────────────────────┐
+   │              AFA Module                        │
+   │  (Filtering + Weighted Feature Aggregation)   │
+   └───────────────────────────┬───────────────────┘
+                               ↓
+                   ┌───────────────────┐
+                   │  BBox & Mask Heads│
+                   └─────────┬─────────┘
+                             ↓
+                   ┌───────────────────┐
+                   │  Post-processing  │
+                   └─────────┬─────────┘
+                             ↓
+              Needle Tracking Result
+              (Entry + Shaft + Tip)
+```
 
 ## Installation
 
-Please refer to [install.md](docs/en/install.md) for install instructions.
+### Requirements
 
-## Getting Started
+- Linux (Windows is not officially supported)
+- Python 3.6+
+- PyTorch 1.3+
+- CUDA 9.2+
+- GCC 5+
+- mmcv-full 1.2.0+
+- mmdet 2.13.0+
+- mmtracking (this repository)
 
-Please see [dataset.md](docs/en/dataset.md) and [quick_run.md](docs/en/quick_run.md) for the basic usage of MMTracking.
-We also provide usage [tutorials](docs/en/tutorials/), such as [learning about configs](docs/en/tutorials/config.md), [an example about detailed description of vid config](docs/en/tutorials/config_vid.md), [an example about detailed description of mot config](docs/en/tutorials/config_mot.md), [an example about detailed description of sot config](docs/en/tutorials/config_sot.md), [customizing dataset](docs/en/tutorials/customize_dataset.md), [customizing data pipeline](docs/en/tutorials/customize_data_pipeline.md), [customizing vid model](docs/en/tutorials/customize_vid_model.md), [customizing mot model](docs/en/tutorials/customize_mot_model.md), [customizing sot model](docs/en/tutorials/customize_sot_model.md), [customizing runtime settings](docs/en/tutorials/customize_runtime.md) and [useful tools](docs/en/useful_tools_scripts.md).
+### Install Steps
 
-## Contributing
+1. Install mmcv-full
 
-We appreciate all contributions to improve MMTracking. Please refer to [CONTRIBUTING.md](https://github.com/open-mmlab/mmcv/blob/master/CONTRIBUTING.md) for the contributing guideline.
+```bash
+pip install mmcv-full -f https://download.openmmlab.com/mmcv/dist/{cu_version}/{torch_version}/index.html
+```
 
-## Acknowledgement
+1. Install mmdetection
 
-MMTracking is an open source project that welcome any contribution and feedback.
-We wish that the toolbox and benchmark could serve the growing research
-community by providing a flexible as well as standardized toolkit to reimplement existing methods
-and develop their own new video perception methods.
+```bash
+pip install mmdet
+```
+
+1. Clone this repository
+
+```bash
+git clone https://github.com/your-username/MOUNT.git
+cd MOUNT
+```
+
+1. Install dependencies
+
+```bash
+pip install -r requirements/build.txt
+pip install -v -e .  # or "python setup.py develop"
+```
+
+## Data Preparation
+
+### Dataset Structure
+
+```
+data/
+└── UltrasoundNeedle/
+    └── dataset_version/
+        ├── Data/
+        │   ├── video_001/
+        │   │   ├── 00001.jpg
+        │   │   ├── 00002.jpg
+        │   │   └── ...
+        │   └── ...
+        └── DataSet/
+            └── coco_format/
+                ├── fold_1/
+                │   ├── train.json
+                │   ├── val.json
+                │   └── test.json
+                └── ...
+```
+
+### Annotation Format
+
+The annotations follow COCO format with additional needle-specific fields, including:
+
+- Polygon annotations for needle segmentation
+- Tip coordinates
+- Entry point coordinates
+- Shaft direction
+
+### Configuration
+Please see [Configurations](./configs/liver_needle/README.md) for more details.
+
+## Usage
+
+### Training
+
+To train MOUNT on the ultrasound needle dataset:
+
+```bash
+# Single GPU training
+python tools/train.py configs/liver_needle/r50_dc5_1x_c04_needle_MOUNT.py
+
+# Multi-GPU training
+bash tools/dist_train.sh configs/liver_needle/r50_dc5_1x_c04_needle_MOUNT.py 8
+```
+
+### Testing
+
+To test the trained model:
+
+```bash
+# Single GPU testing
+python tools/test.py configs/liver_needle/r50_dc5_1x_c04_needle_MOUNT.py \
+    work_dirs/your_checkpoint.pth \
+    --eval bbox segm
+
+# Multi-GPU testing
+bash tools/dist_test.sh configs/liver_needle/r50_dc5_1x_c04_needle_MOUNT.py \
+    work_dirs/your_checkpoint.pth \
+    8 \
+    --eval bbox segm
+```
+
+### Inference
+
+To run inference on a single video:
+
+```bash
+python demo/demo_vid.py \
+    configs/liver_needle/r50_dc5_1x_c04_needle_MOUNT.py \
+    work_dirs/your_checkpoint.pth \
+    --input path/to/your/video.mp4 \
+    --output path/to/output.mp4
+```
+
+## Configurations
+
+We provide several configuration files in `configs/liver_needle/`:
+
+| Config File                                                         | Description                       |
+| ------------------------------------------------------------------- | --------------------------------- |
+| `r50_dc5_1x_c04_needle_MOUNT.py`           | Full MOUNT model with all modules |
+| `r50_dc5_1x_c04_needle_UMP_TDRPN.py`     | MOUNT with UMP and TD-RPN only    |
+| `r50_dc5_1x_c04_needle_tip_rpn_AFA.py`   | MOUNT with TD-RPN and AFA         |
+| `r50_dc5_1x_c04_needle_MOUNT_fold{1-5}.py` | Cross-validation splits           |
+
+
+## License
+
+This project is released under the Apache 2.0 license.
 
 ## Citation
 
-If you find this project useful in your research, please consider cite:
+If you find this work useful for your research, please cite our paper:
 
-```latex
-@misc{mmtrack2020,
-    title={{MMTracking: OpenMMLab} video perception toolbox and benchmark},
-    author={MMTracking Contributors},
-    howpublished = {\url{https://github.com/open-mmlab/mmtracking}},
-    year={2020}
+```bibtex
+@inproceedings{mount2025,
+  title={Needle Tracking for Free-hand Ultrasound-Guided Percutaneous Liver Tumor Ablations},
+  author={Ningtao Liu, Shuwei Xing, Derek W. Cool, Jing Yuan, Luguang Huang, Kun Jiang, Shuiping Gou, and Aaron Fenster},
+  year={2025}
 }
 ```
 
-## Projects in OpenMMLab
+## Acknowledgements
 
-- [MMCV](https://github.com/open-mmlab/mmcv): OpenMMLab foundational library for computer vision.
-- [MIM](https://github.com/open-mmlab/mim): MIM installs OpenMMLab packages.
-- [MMClassification](https://github.com/open-mmlab/mmclassification): OpenMMLab image classification toolbox and benchmark.
-- [MMDetection](https://github.com/open-mmlab/mmdetection): OpenMMLab detection toolbox and benchmark.
-- [MMDetection3D](https://github.com/open-mmlab/mmdetection3d): OpenMMLab's next-generation platform for general 3D object detection.
-- [MMRotate](https://github.com/open-mmlab/mmrotate): OpenMMLab rotated object detection toolbox and benchmark.
-- [MMSegmentation](https://github.com/open-mmlab/mmsegmentation): OpenMMLab semantic segmentation toolbox and benchmark.
-- [MMOCR](https://github.com/open-mmlab/mmocr): OpenMMLab text detection, recognition and understanding toolbox.
-- [MMPose](https://github.com/open-mmlab/mmpose): OpenMMLab pose estimation toolbox and benchmark.
-- [MMHuman3D](https://github.com/open-mmlab/mmhuman3d): OpenMMLab 3D human parametric model toolbox and benchmark.
-- [MMSelfSup](https://github.com/open-mmlab/mmselfsup): OpenMMLab self-supervised learning Toolbox and Benchmark.
-- [MMRazor](https://github.com/open-mmlab/mmrazor): OpenMMLab Model Compression Toolbox and Benchmark.
-- [MMFewShot](https://github.com/open-mmlab/mmfewshot): OpenMMLab FewShot Learning Toolbox and Benchmark.
-- [MMAction2](https://github.com/open-mmlab/mmaction2): OpenMMLab's next-generation action understanding toolbox and benchmark.
-- [MMTracking](https://github.com/open-mmlab/mmtracking): OpenMMLab video perception toolbox and benchmark.
-- [MMFlow](https://github.com/open-mmlab/mmflow): OpenMMLab optical flow toolbox and benchmark.
-- [MMEditing](https://github.com/open-mmlab/mmediting): OpenMMLab image and video editing toolbox.
-- [MMGeneration](https://github.com/open-mmlab/mmgeneration):  OpenMMLab Generative Model toolbox and benchmark.
-- [MMDeploy](https://github.com/open-mmlab/mmdeploy): OpenMMlab deep learning model deployment toolset.
+This work is built upon the excellent [mmtracking](https://github.com/open-mmlab/mmtracking) and [mmdetection](https://github.com/open-mmlab/mmdetection) frameworks.
+
+## Contact
+
+For questions or issues, please open an issue or contact the authors.
