@@ -58,7 +58,8 @@ def main():
         if fps is None and IN_VIDEO:
             fps = imgs.fps
         if not fps:
-            raise ValueError('Please set the FPS for the output video.')
+            # raise ValueError('Please set the FPS for the output video.')
+            fps = 1
         fps = int(fps)
 
     # build the model from a config file and a checkpoint file

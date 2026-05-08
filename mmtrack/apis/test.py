@@ -77,9 +77,10 @@ def single_gpu_test(model,
             # There are two corner cases.
             # Case 1: prev_img_meta == None means there is no previous video.
             # Case 2: i == len(dataset) means processing the last video
-            need_write_video = (
-                prev_img_meta is not None and img_meta['frame_id'] == 0
-                or i == len(dataset))
+            # need_write_video = (
+            #     prev_img_meta is not None and img_meta['frame_id'] == 0
+            #     or i == len(dataset))
+            need_write_video = False
             if out_dir and need_write_video:
                 prev_img_prefix, prev_img_name = prev_img_meta[
                     'ori_filename'].rsplit(os.sep, 1)
