@@ -23,82 +23,17 @@ from sklearn.metrics import confusion_matrix
 from medpy.metric import dc, jc, hd, asd, hd95, sensitivity, specificity
 from PIL import Image
 
-data_dir = r'/srv/fenster/people/Ningtao/Dataset/LiverNeedle/1020/Data/'
-resolution_dict = json.load(open(r'/srv/fenster/people/Ningtao/Dataset/LiverNeedle/1020/DataSet/Documents/resolution.json', 'r'))
-frame_type_xlsx = pd.ExcelFile(r'/srv/fenster/people/Ningtao/Dataset/LiverNeedle/1020/DataSet/tip_type.xlsx')
+data_dir = r'path/to/your/dataset'
+resolution_dict = json.load(open(r'path/to/your/dataset/DataSet/Documents/resolution.json', 'r'))
+frame_type_xlsx = pd.ExcelFile(r'path/to/your/dataset/DataSet/tip_type.xlsx')
 sns.set_context("paper", rc={"font.size":20,"axes.titlesize":20,"axes.labelsize":20})   
 
+# Ablation phase origin dict {v_name: (start_time, end_time)}
 ablation_phase_origin_dict = {
-            "p003_v7": (390, 670),
-            "p004_v1": (1026, 1200),
-            "p004_v6": (490, 566),
-            "p007_v1": (403, 488),
-            "p007_v2": (869, 879),
-            "p008_v1": (-1, -1),
-            "p008_v2": (916, 1055),
-            "p012_04": (150, 163),
-            "p012_021": (748, 1132),
-            "p020_03": (-1, -1),
-            "p020_07": (-1, -1),
-            "p020_08": (-1, -1),
-            "p008_v4": (25, 102),
-            "p018_06": (181, 348),
-            "p015_04": (521, 613),
-            "p013_06": (52, 114),
-            "p018_01": (853, 1063),
-            "p003_v1": (414, 610),
-            "p012_01": (-1, -1),
-            "p019_01": (-1, -1),
-            "p003_v2": (65, 69),
-            "p019_03": (585, 770),
-            "p003_v8": (-1, -1),
-            "p015_07": (20, 33),
-            "p020_06": (-1, -1),
-            "p020_05": (-1, -1),
-            "p020_04": (-1, -1),
-            "p020_02": (155, 214),
-            "p019_02": (-1, -1),
-            "p018_07": (-1, -1),
-            "p018_05": (1, 87),
-            "p018_04": (1294, 1398),
-            "p018_03": (-1, -1),
-            "p018_02": (544, 1105),
-            "p017_02": (1, 55),
-            "p017_01": (911, 1883),
-            "p015_07": (39, 41),
-            "p015_06": (286, 287),
-            "p015_05": (113, 247),
-            "p015_04": (507, 617),
-            "p015_03": (340, 481),
-            "p015_02": (-1, -1),
-            "p015_01": (485, 538),
-            "p013_05": (-1, -1),
-            "p013_03": (1020, 2328),
-            "p012_03": (661, 683),
-            "p012_03": (661, 1096),
-            "p012_02": (-1, -1),
-            "p011_v2": (-1, -1),
-            "p011_v1": (605, 703),
-            "p011_v1": (605, 1031),
-            "p010_v3": (22, 132),
-            "p010_v2": (5, 253),
-            "p010_v1": (1008, 1239),
-            "p008_v3": (1, 93),
-            "p004_v7": (216, 240),
-            "p004_v5": (534, 580),
-            "p004_v4": (227, 585),
-            "p004_v3": (490, 1261),
-            "p004_v2": (662, 876),
-            "p003_v6": (13, 40),
-            "p003_v5": (27, 170),
-            "p003_v4": (684, 767),
-            "p003_v3": (226, 371),
-            "p003_repeated_v3": (-1, -1),
-            "p003_repeated_v2": (1, 53),
-            "p003_repeated_v1": (369, 501),
-        }
+}
 
-RFA_list = ['p001', 'p002', 'p005', 'p009', 'p014', 'p004', 'p007', 'p010', 'p011', 'p013', 'p015', 'p018', 'p019']
+# RFA list [p001, p002, ...]
+RFA_list = []
 
 class EvalCombine():
     def __init__(self, 
@@ -1710,8 +1645,8 @@ def add_relative_dis():
                 per_list_rel.save()
 
 def statitic_specific_per():
-    doc_dir = '/srv/fenster/people/Ningtao/Project/USVideo/tracking/mmtracking/custom/metric_doc/liver_needle'
-    work_dir = 'all_folds_top2_mask'
+    doc_dir = 'path/to/your/metric_doc'
+    work_dir = 'path/to/your/work_dir'
     col_key = 'mask'
     result_file = open(os.path.join(doc_dir, work_dir, f'{col_key}.txt'), mode='w')
 
@@ -1772,7 +1707,7 @@ if __name__ == '__main__':
     # get_summary()
     # static_std()
     # summary_describe()
-    summary_best()
+    # summary_best()
     # concat_list()
     # error_analysis()
     # error_bins()
